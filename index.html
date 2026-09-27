@@ -30,11 +30,33 @@
         </ol>
     </main>
 
-    <section class="forum-box">
+    <section class="auth-panel" id="authPanel">
+        <div class="auth-box" id="registerBox">
+            <h3>Załóż konto</h3>
+            <form id="registerForm">
+                <input id="registerName" type="text" placeholder="Nazwa użytkownika" maxlength="20" required />
+                <input id="registerPassword" type="password" placeholder="Hasło" minlength="4" required />
+                <button type="button" id="registerButton">Utwórz konto</button>
+            </form>
+        </div>
+
+        <div class="auth-box" id="loginBox">
+            <h3>Zaloguj się</h3>
+            <form id="loginForm">
+                <input id="loginName" type="text" placeholder="Nazwa użytkownika" maxlength="20" required />
+                <input id="loginPassword" type="password" placeholder="Hasło" required />
+                <button type="button" id="loginButton">Zaloguj</button>
+            </form>
+        </div>
+    </section>
+
+    <div id="userStatus" class="user-status">Nie zalogowano</div>
+
+    <section class="forum-box" id="forumBox">
         <h3>Napisz post</h3>
         <form id="postForm">
-            <textarea id="postInput" name="post" rows="5" placeholder="Napisz coś na forum..."></textarea>
-            <button type="submit">Wyślij</button>
+            <textarea id="postInput" name="post" rows="5" placeholder="Zaloguj się, żeby napisać na forum..." disabled></textarea>
+            <button type="submit" id="postButton" disabled>Wyślij</button>
         </form>
     </section>
 
@@ -44,13 +66,21 @@
     </section>
 
     <script>
-        const STORAGE_KEY = 'elPepeForumPosts';
+        const USERS_KEY = 'elPepeForumUsers';
+        const POSTS_KEY = 'elPepeForumPosts';
+        const CURRENT_USER_KEY = 'elPepeForumCurrentUser';
+        const CHANNEL_NAME = 'elPepeForumChannel';
+
+        const registerForm = document.getElementById('registerForm');
+        const loginForm = document.getElementById('loginForm');
         const postForm = document.getElementById('postForm');
         const postInput = document.getElementById('postInput');
+        const postButton = document.getElementById('postButton');
         const postsList = document.getElementById('postsList');
+        const userStatus = document.getElementById('userStatus');
 
         function escapeHtml(text) {
-            return text
+            return String(text)
                 .replace(/&/g, '&amp;')
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
@@ -58,17 +88,63 @@
                 .replace(/'/g, '&#039;');
         }
 
+        function getUsers() {
+            const savedUsers = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+            return Array.isArray(savedUsers) ? savedUsers : [];
+        }
+
+        function saveUsers(users) {
+            localStorage.setItem(USERS_KEY, JSON.stringify(users));
+        }
+
         function getPosts() {
-            const savedPosts = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+            const savedPosts = JSON.parse(localStorage.getItem(POSTS_KEY) || '[]');
             return Array.isArray(savedPosts) ? savedPosts : [];
         }
 
         function savePosts(posts) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+            localStorage.setItem(POSTS_KEY, JSON.stringify(posts));
+        }
+
+        function getCurrentUser() {
+            return localStorage.getItem(CURRENT_USER_KEY) || '';
+        }
+
+        function setCurrentUser(username) {
+            localStorage.setItem(CURRENT_USER_KEY, username);
+        }
+
+        function clearCurrentUser() {
+            localStorage.removeItem(CURRENT_USER_KEY);
+        }
+
+        function updateUserState() {
+            const currentUser = getCurrentUser();
+
+            if (currentUser) {
+                userStatus.innerHTML = `Zalogowano jako <strong>${escapeHtml(currentUser)}</strong> <button type="button" id="logoutButton" class="logout-button">Wyloguj</button>`;
+                postInput.disabled = false;
+                postInput.placeholder = 'Napisz coś na forum...';
+                postButton.disabled = false;
+            } else {
+                userStatus.textContent = 'Nie zalogowano';
+                postInput.disabled = true;
+                postInput.placeholder = 'Zaloguj się, żeby napisać na forum...';
+                postButton.disabled = true;
+            }
+
+            const logoutButton = document.getElementById('logoutButton');
+            if (logoutButton) {
+                logoutButton.addEventListener('click', function () {
+                    clearCurrentUser();
+                    updateUserState();
+                });
+            }
         }
 
         function renderPosts() {
             const posts = getPosts();
+            const currentUser = getCurrentUser();
 
             if (posts.length === 0) {
                 postsList.innerHTML = '<p class="empty-posts">Brak postów. Bądź pierwszy!</p>';
@@ -76,17 +152,100 @@
             }
 
             postsList.innerHTML = posts
-                .map((post, index) => `
-                    <article class="post-item">
-                        <p>${escapeHtml(post)}</p>
-                        <button type="button" class="delete-post" data-index="${index}">Usuń</button>
-                    </article>
-                `)
+                .map((post, index) => {
+                    const canDelete = currentUser && currentUser === post.author;
+                    return `
+                        <article class="post-item">
+                            <div class="post-header">
+                                <strong>${escapeHtml(post.author)}</strong>
+                                ${canDelete ? `<button type="button" class="delete-post" data-index="${index}">Usuń</button>` : ''}
+                            </div>
+                            <p>${escapeHtml(post.text)}</p>
+                        </article>
+                    `;
+                })
                 .join('');
         }
 
+        let forumChannel = null;
+        if ('BroadcastChannel' in window) {
+            forumChannel = new BroadcastChannel(CHANNEL_NAME);
+            forumChannel.addEventListener('message', function () {
+                renderPosts();
+            });
+        }
+
+        window.addEventListener('storage', function (event) {
+            if (event.key === POSTS_KEY) {
+                renderPosts();
+            }
+        });
+
+        document.getElementById('registerButton').addEventListener('click', function () {
+            const username = document.getElementById('registerName').value.trim();
+            const password = document.getElementById('registerPassword').value.trim();
+
+            if (!username || !password) {
+                alert('Uzupełnij nazwę użytkownika i hasło.');
+                return;
+            }
+
+            if (username.length < 3) {
+                alert('Nazwa użytkownika musi mieć co najmniej 3 znaki.');
+                return;
+            }
+
+            if (password.length < 4) {
+                alert('Hasło musi mieć co najmniej 4 znaki.');
+                return;
+            }
+
+            const users = getUsers();
+            const existingUser = users.find(user => user.username.toLowerCase() === username.toLowerCase());
+
+            if (existingUser) {
+                alert('Ta nazwa użytkownika już istnieje.');
+                return;
+            }
+
+            users.push({ username, password });
+            saveUsers(users);
+            registerForm.reset();
+            alert('Konto utworzone pomyślnie!');
+
+            document.getElementById('loginBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            document.getElementById('loginName').focus();
+        });
+
+        document.getElementById('loginButton').addEventListener('click', function () {
+            const username = document.getElementById('loginName').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+
+            const users = getUsers();
+            const user = users.find(item => item.username.toLowerCase() === username.toLowerCase() && item.password === password);
+
+            if (!user) {
+                alert('Błędna nazwa użytkownika lub hasło.');
+                return;
+            }
+
+            setCurrentUser(user.username);
+            loginForm.reset();
+            updateUserState();
+            renderPosts();
+
+            document.getElementById('forumBox').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            postInput.focus();
+        });
+
         postForm.addEventListener('submit', function (event) {
             event.preventDefault();
+
+            const currentUser = getCurrentUser();
+            if (!currentUser) {
+                alert('Zaloguj się, żeby napisać post.');
+                return;
+            }
 
             const text = postInput.value.trim();
             if (!text) {
@@ -94,8 +253,16 @@
             }
 
             const posts = getPosts();
-            posts.unshift(text);
+            posts.unshift({
+                author: currentUser,
+                text: text,
+                createdAt: Date.now()
+            });
+
             savePosts(posts);
+            if (forumChannel) {
+                forumChannel.postMessage({ type: 'posts-updated' });
+            }
             renderPosts();
             postForm.reset();
         });
@@ -107,11 +274,21 @@
 
             const index = Number(event.target.dataset.index);
             const posts = getPosts();
+            const currentUser = getCurrentUser();
+
+            if (!currentUser || posts[index]?.author !== currentUser) {
+                return;
+            }
+
             posts.splice(index, 1);
             savePosts(posts);
+            if (forumChannel) {
+                forumChannel.postMessage({ type: 'posts-updated' });
+            }
             renderPosts();
         });
 
+        updateUserState();
         renderPosts();
     </script>
 
