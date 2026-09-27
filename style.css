@@ -1,0 +1,156 @@
+﻿* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+    color: #111;
+}
+
+.hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: linear-gradient(180deg, #0d1117 0%, #1f2937 100%);
+    color: white;
+    padding: 40px 20px;
+}
+
+.hero-content h1 {
+    margin: 0;
+    font-size: 3rem;
+}
+
+.hero-content p {
+    margin-top: 10px;
+    font-size: 1.2rem;
+    color: #d1d5db;
+}
+
+.pepe-image {
+    width: min(420px, 80vw);
+    height: auto;
+    border-radius: 20px;
+    margin-top: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.rules-section {
+    max-width: 900px;
+    margin: 80px auto 30px;
+    padding: 40px 24px;
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+.rules-section h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+}
+
+.rules-section ol {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    padding-left: 24px;
+}
+
+.rules-section li {
+    margin-bottom: 10px;
+}
+
+.forum-box {
+    max-width: 900px;
+    margin: 0 auto 80px;
+    background: #fff;
+    border-radius: 20px;
+    padding: 25px 24px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+.forum-box h3 {
+    margin-top: 0;
+    font-size: 1.6rem;
+}
+
+.forum-box form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.forum-box textarea {
+    width: 100%;
+    resize: vertical;
+    min-height: 120px;
+    padding: 14px;
+    border: 2px solid #ccc;
+    border-radius: 12px;
+    font-size: 1rem;
+}
+
+.forum-box button {
+    align-self: flex-start;
+    padding: 12px 22px;
+    background: #111827;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.forum-box button:hover {
+    background: #1f2937;
+}
+
+.posts-section {
+    max-width: 900px;
+    margin: 0 auto 80px;
+    background: #fff;
+    border-radius: 20px;
+    padding: 25px 24px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+.posts-section h3 {
+    margin-top: 0;
+    font-size: 1.5rem;
+}
+
+.post-item {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    background: #f9fafb;
+}
+
+.post-item p {
+    margin: 0 0 10px;
+    line-height: 1.6;
+    word-break: break-word;
+}
+
+.delete-post {
+    background: #dc2626;
+    color: white;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.delete-post:hover {
+    background: #b91c1c;
+}
+
+.empty-posts {
+    color: #6b7280;
+    margin: 0;
+}
